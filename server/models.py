@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from sqlalchemy.ext.associationproxy import association_proxy
-# from sqlalchemy_serializer import SerializerMixin
+from sqlalchemy_serializer import SerializerMixin
 
 
 metadata = MetaData(naming_convention={
@@ -11,7 +11,7 @@ metadata = MetaData(naming_convention={
 db = SQLAlchemy(metadata=metadata)
 
 
-class Customer(db.Model):
+class Customer(db.Model,SerializerMixin):
     __tablename__ = 'customers'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -19,13 +19,15 @@ class Customer(db.Model):
 
     reviews=db.relationship('Review',back_populates='customer')
 
+    serialize_rules=('-reviews.customers',)
+
     items=association_proxy('reviews','item',creator=lambda item_obj: Review(item=item_obj))
 
     def __repr__(self):
         return f'<Customer {self.id}, {self.name}>'
 
 
-class Item(db.Model):
+class Item(db.Model,SerializerMixin):
     __tablename__ = 'items'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -34,10 +36,12 @@ class Item(db.Model):
 
     reviews=db.relationship('Review',back_populates='item')
 
+    serialize_rules=('-reviews.items',)
+
     def __repr__(self):
         return f'<Item {self.id}, {self.name}, {self.price}>'
     
-class Review(db.Model):
+class Review(db.Model,SerializerMixin):
     __tablename__='reviews'
 
     id=db.Column(db.Integer,primary_key=True)
@@ -47,3 +51,6 @@ class Review(db.Model):
 
     customer=db.relationship('Customer',back_populates='reviews')
     item=db.relationship('Item',back_populates='reviews')
+
+
+    serialize_rules=('-customer.reviews','-item.reviews',)
